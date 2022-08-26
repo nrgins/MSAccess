@@ -1,0 +1,51 @@
+Public Function ReplaceLineBreaksWithSpaces()
+'Replaces all line breaks and hard returns in a database
+'(all tables, all fields) with a space.
+'Skips over any numeric fields and any fields named "ID".
+'Writes any errors to the Immediate window, and moves on to the next field.
+
+On Error GoTo Error_Handler
+
+    Dim db As Database
+    Dim tdf As TableDef
+    Dim rs As Recordset
+    Dim fld As Field
+    Dim strSQL As String
+    Dim strField As String
+    Dim strTable As String
+    
+    Set db = CurrentDb
+
+    For Each tdf In db.TableDefs
+        strTable = tdf.Name
+        strSQL = "Select * From [" & strTable & "]"
+        If Left(strTable, 4) <> "MSys" Then
+            Set rs = db.OpenRecordset(strSQL, dbOpenDynaset)
+            Do Until rs.EOF
+                rs.Edit
+                For Each fld In rs.Fields
+                    strField = fld.Name
+                    If Not IsNumeric(fld.Value) And strField <> "ID" Then
+                        fld.Value = Replace(Replace(Nz(fld.Value), vbCrLf, " "), vbLf, " ")
+                    End If
+                Next
+                rs.Update
+                rs.MoveNext
+            Loop
+        End If
+    Next
+    
+    MsgBox "Done.", vbInformation
+
+Exit_Label:
+    rs.Close
+    Set rs = Nothing
+    Set fld = Nothing
+    Set tdf = Nothing
+    Set db = Nothing
+    
+Error_Handler:
+    Debug.Print strTable, strField, "Error " & Err.Number, Err.Description
+    Resume Next
+    
+End Function
