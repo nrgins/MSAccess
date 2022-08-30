@@ -1,0 +1,54 @@
+Public Function RelinkTables() As Boolean
+'Resets table links to point to back end in same folder 
+'as current front end folder
+
+On Error GoTo Error_Label
+
+    Dim rs As Recordset
+    Dim strPath As String
+    Dim strFile As String
+    Dim tdf As TableDef
+    Dim db As Database
+    Dim pos As Integer
+    
+    Set db = CurrentDb()
+	
+	strPath = CurrentDb.Name
+    pos = InStrRev(strPath, "\")
+    strPath = Left(strPath, pos)
+
+    For Each tdf In db.TableDefs
+        If Left(tdf.Connect, Len(";DATABASE=")) = ";DATABASE=" Then
+            pos = InStrRev(tdf.Connect, "\")
+            If pos = 0 Then
+                MsgBox "Error parsing connect string: '" & _
+				    tdf.Connect & "'. Refresh canceled.", vbCritical
+                GoTo Exit_Label
+            End If
+            
+            strFile = strPath & Mid(tdf.Connect, pos + 1)
+            
+            If tdf.Connect <> ";DATABASE=" & strFile Then
+                tdf.Connect = ";DATABASE=" & strFile
+                tdf.RefreshLink
+            End If
+        End If
+    Next
+    
+    RelinkTables = True
+    
+Exit_Label:
+    If Not rs Is Nothing Then rs.Close
+    Set rs = Nothing
+    Set tdf = Nothing
+    Set db = Nothing
+    Exit Function
+    
+Error_Label:
+    If MsgBox(Err.Description, vbCritical + vbOKCancel, _
+	          "Refresh Link Error " & Err.Number) = vbOK Then
+        Resume Next
+    End If
+    Resume Exit_Label
+       
+End Function
