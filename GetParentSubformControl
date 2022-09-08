@@ -1,0 +1,30 @@
+Function GetParentSubformControl(frmSub As Form) As SubForm
+'Returns the subform control object that contains the subform that called the procedure. 
+'Subform calling the procedure simply passes the "Me" object to the procedure.
+
+On Error GoTo Error_Label
+
+    Dim frmParent As Form
+    Dim ctl As Control
+
+    Set frmParent = frmSub.Parent
+    For Each ctl In frmParent.Controls
+        If ctl.ControlType = acSubform Then
+            If ctl.Form Is frmSub Then
+                Set GetParentSubformControl = ctl
+                Exit For
+            End If
+        End If
+    Next
+    
+Exit_Label:
+    Set ctl = Nothing
+    Set frmParent = Nothing
+    Exit Function
+    
+Error_Label:
+    Set GetParentSubformControl = Nothing
+    MsgBox Err.Description, vbCritical, "Error " & Err.Number
+    Resume Exit_Label
+
+End Function
